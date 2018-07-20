@@ -8,28 +8,44 @@ from flask_restful import Api, Resource
 app = Flask(__name__)
 api = Api(app)
 
+
+
 #check if the data poted is correct
 def checkPostedData(postedData, functionName):
-    if (functionName == 'Add'):
+    if (functionName == 'Add' or functionName == 'Subtract' or functionName == 'Multiply'):
         if 'x' not in postedData or 'y' not in postedData:
             return 301
-        else:
+        #isinstance is used to check if a value is of a given datatype
+        elif not isinstance(postedData['x'], str) and not isinstance(postedData['y'], str):
             return 200
-    if (functionName == 'Subtract'):
-        if 'x' not in postedData or 'y' not in postedData:
-            return 301
         else:
-            return 200
-    if (functionName == 'Multiply'):
-        if 'x' not in postedData or 'y' not in postedData:
-            return 301
-        else:
-            return 200
+            return 303
+    
     if (functionName == 'Divide'):
         if 'x' not in postedData or 'y' not in postedData:
             return 301
-        else:
+        elif not isinstance(postedData['x'], str) and not isinstance(postedData['y'], str):
             return 200
+        elif postedData['y']==0:
+            return 302
+        elif isinstance(postedData['y'], str) or isinstance(postedData['x'], str):
+            return 303
+        else:
+            return 303
+
+error301 = {
+                'Message': 'An error occured: one or more value not given',
+                'Status Code': 301
+            }
+error302 = {
+                'Message': 'An error occured: one or more value is zero',
+                'Status Code': 302
+            }
+error303 = {
+                'Message': 'An error occured: one or more value is invalid',
+                'Status Code': 303
+            }
+
  #if Add was requested using the POST mtd it would come here
 class Add(Resource):
     def post(self):
@@ -39,15 +55,14 @@ class Add(Resource):
     
      #step2 check if data posted is correct
         status_code = checkPostedData(postedData, 'Add')
-        if (status_code != 200):
-            retJson = {
-                'Message': 'An error occured: one or more value not given',
-                'Status Code': status_code
-            }
-            return jsonify(retJson)
+        if (status_code == 301):
+            return jsonify(error301)
+        
+        if (status_code == 303):
+            return jsonify(error303)
     #step3: if posted data is correct perform this
-        x = int(postedData['x'])
-        y = int(postedData['y'])
+        x = postedData['x']
+        y = postedData['y']
         ret = x + y
         retJson = {
             'Message': ret,
@@ -63,15 +78,14 @@ class Subtract(Resource):
     
      #step2 check if data posted is correct
         status_code = checkPostedData(postedData, 'Subtract')
-        if (status_code != 200):
-            retJson = {
-                'Message': 'An error occured: one or more value not given',
-                'Status Code': status_code
-            }
-            return jsonify(retJson)
+        if (status_code == 301):
+            return jsonify(error301)
+        
+        if (status_code == 303):
+            return jsonify(error303)
     #step3: if posted data is correct perform this
-        x = int(postedData['x'])
-        y = int(postedData['y'])
+        x = postedData['x']
+        y = postedData['y']
         ret = x - y
         retJson = {
             'Message': ret,
@@ -82,15 +96,16 @@ class Multipy(Resource):
     def post(self):
         postedData = request.get_json()
         status_code = checkPostedData(postedData, 'Multiply')
-        if (status_code != 200):
-            retJson = {
-                'Message': 'An error occured: one or more value not given',
-                'Status Code': status_code
-            }
-            return jsonify(retJson)
+        if (status_code == 301):
+            return jsonify(error301)
+        if (status_code == 302):
+            return jsonify(error302)
+        if (status_code == 303):
+            return jsonify(error303)
     #step3: if posted data is correct perform this
-        x = int(postedData['x'])
-        y = int(postedData['y'])
+        x = postedData['x']
+        y = postedData['y']
+        
         ret = x * y
         retJson = {
             'Message': ret,
@@ -102,15 +117,19 @@ class Divide(Resource):
     def post(self):
         postedData = request.get_json()
         status_code = checkPostedData(postedData, 'Divide')
-        if (status_code != 200):
-            retJson = {
-                'Message': 'An error occured: one or more value not given',
-                'Status Code': status_code
-            }
-            return jsonify(retJson)
+        if (status_code == 301):
+            return jsonify(error301)
+        if (status_code == 302):
+            return jsonify(error302)
+        
+        if (status_code == 303):
+            return jsonify(error303)
     #step3: if posted data is correct perform this
-        x = int(postedData['x'])
-        y = int(postedData['y'])
+        x = postedData['x']
+        y = postedData['y']
+        if y == 0:
+            return jsonify(error302)
+
         res = x / y
         #round() rounds up to 2d.p
         ret = round(res, 2)
@@ -121,7 +140,7 @@ class Divide(Resource):
         return jsonify(retJson)
 
 
-
+#Add resources to api
 api.add_resource(Add, '/add')
 api.add_resource(Subtract, '/sub')
 api.add_resource(Multipy, '/mult')
